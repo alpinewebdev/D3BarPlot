@@ -1,0 +1,138 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="description"
+	content="A bar chart made with the js library D3.">
+<meta name="keywords" content="data datadriven statistics D3">
+<meta name="author" content="Nikolai Riedel">
+<meta name="viewport"
+	content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+
+<link rel="stylesheet" type="text/css" href="index.css">
+<script src="https://d3js.org/d3.v4.js"></script>
+
+
+</head>
+<body>
+	<svg id="chartWrapper">
+			
+		</svg>
+
+	<script>
+			
+		
+			(function(){
+				
+				let margin = {top: window.innerHeight / 10, right: window.innerWidth / 8, bottom: window.innerHeight / 10, left: window.innerWidth / 8},
+				width = window.innerWidth - margin.right - margin.left;
+				height = window.innerHeight - margin.bottom - margin.top;
+			
+				let xSca = d3.scaleBand()
+							 .range([0, width]);
+				
+				let ySca = d3.scaleLinear()
+							   .range([height, 0]);
+				
+				let xAxis = d3.axisBottom()
+							    .scale(xSca);
+				
+				let yAxis = d3.axisLeft()
+							    .scale(ySca);
+				
+				let chart = d3.select("#chartWrapper")
+				  			    .attr("width", width + margin.left + margin.right)
+				  			    .attr("height", height + margin.bottom + margin.top)
+				  			  .append("g")
+				  			    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+				
+				let showDetails = function(d){
+					chart.append("rect")
+						   .attr("class", "detailsPopup")
+						   .attr("id", "popup" + d[0])
+						   .attr("x", xSca(d[0]))
+						   .attr("y", ySca(d[1]))
+						   .attr("width", "15rem")
+						   .attr("height", "5rem");
+					let textDetails = chart.append("text")
+						   			   .attr("id", "popupDetails")
+						   			   .attr("x", xSca(d[0]))
+						   			   .attr("y", ySca(d[1]) + 20)
+				    textDetails.append("tspan")
+				    			 .attr("dx", "0.2em")
+				    			 .attr("dy", "0.5em")
+						         .text("Date: " + d[0]);
+				    textDetails.append("tspan")
+				    			 .attr("dx", "-7em")
+				    		     .attr("dy", "1em")
+				    		     .text("GDP: " + d[1] + " $");
+				    			
+					
+				};
+				
+				let hideDetails = function(d){
+					document.getElementById("popup" + d[0]).remove();
+					document.getElementById("popupDetails").remove();
+				};
+				
+				d3.json("https://raw.githubusercontent.com/FreeCodeCamp/ProjectReferenceData/master/GDP-data.json", function(error, data){
+
+
+					let xScaleDomain = data.data.map(function(d){return d[0];});
+					xSca.domain(xScaleDomain);
+					ySca.domain([0, d3.max(data.data, function(d){ return d[1];})]);
+
+					
+					chart.append("g")
+						   .attr("transform", "translate(0," + height + ")")
+						   .attr("class", "x axis")
+						   .call(xAxis.tickValues(xSca.domain().filter(function(d, i, arr){
+							   
+							   return ((new Date(Date.parse(d))).getFullYear() % 5 === 0 && // Show only every fifth year
+									   (new Date(Date.parse(arr[i - 1]))).getFullYear() % 5 !== 0); // Do not show four values for every quartal of that year
+							   
+						   })))
+						 .append("text")
+						   .attr("x", width / 2)
+						   .attr("dy", "2em")
+						   .style("font-size", "1.5rem")
+						   .style("text-anchor", "end")
+						   .text("Date");
+					
+					chart.append("g")
+						   .attr("class", "y axis")
+						   .call(yAxis.ticks(5))
+					     .append("text")
+					       .attr("transform", "rotate(-90)")
+						   .attr("x", -height / 3)
+						   .attr("dy", "-3.1em")
+						   .style("font-size", "1.5rem")
+						   .text("Gross Domestic Product US [$]");
+
+					chart.selectAll(".bar")
+					       .data(data.data)
+					     .enter().append("rect")
+					       .attr("class", "bar")
+					       .attr("id", function(d){return d[0];})
+					       .attr("x", function(d) { return xSca(d[0]); })
+					       .attr("y", function(d) { return ySca(d[1]); })
+					       .attr("height", function(d) { return height - ySca(d[1]); })
+					       .attr("width", xSca.bandwidth())
+					       .on("mouseenter", showDetails)
+					       .on("mouseout", hideDetails);
+					
+					
+				});
+				
+				chart.append("text")
+					 .attr("y", height + 70)
+					 .attr("x", width - 3.7 * width/4)
+					 .text("Units: Billions of Dollars Seasonal Adjustment: Seasonally Adjusted Annual Rate Notes: A Guide to the National Income and Product Accounts of the United States (NIPA) - (http://www.bea.gov/national/pdf/nipaguid.pdf)");
+				
+				
+			})();
+			
+		</script>
+</body>
+</html>
